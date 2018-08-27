@@ -1,0 +1,166 @@
+#!/bin/bash
+get_media_status()
+{
+    rm -rf /etc/yum.repos.d/*.repo
+    mount /dev/cdrom /media
+    media=$(df -h | tail -n 1 | awk '{print $1}' | cut -d'/' -f3)
+    if [ $media != sr0 ]; then
+        echo "Please check the media"
+        pid=$(ps aux | grep virtual-user | awk '{print $2}')
+        kill -9 $pid
+    fi
+}
+get_OS_version()
+{
+    version=$(cat /etc/redhat-release | awk '{print $4}' | cut -d'.' -f1)
+}
+make_repo_file()
+{
+    echo "cleaning repo files"
+    rm -rf /etc/yum.repos.d/*.repo
+    echo "writing repo files"
+    get_OS_version
+    if [ $version -eq 6 ]; then
+        echo '# CentOS-Base.repo
+#
+# The mirror system uses the connecting IP address of the client and the
+# update status of each mirror to pick mirrors that are updated to and
+# geographically close to the client.  You should use this for CentOS updates
+# unless you are manually picking other mirrors.
+#
+# If the mirrorlist= does not work for you, as a fall back you can try the
+# remarked out baseurl= line instead.
+#
+#
+[base]
+name=CentOS-$releasever - Base
+baseurl=https://mirrors.tuna.tsinghua.edu.cn/centos/$releasever/os/$basearch/
+#mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=os
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
+
+#released updates
+[updates]
+name=CentOS-$releasever - Updates
+baseurl=https://mirrors.tuna.tsinghua.edu.cn/centos/$releasever/updates/$basearch/
+#mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=updates
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
+
+#additional packages that may be useful
+[extras]
+name=CentOS-$releasever - Extras
+baseurl=https://mirrors.tuna.tsinghua.edu.cn/centos/$releasever/extras/$basearch/
+#mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=extras
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
+
+#additional packages that extend functionality of existing packages
+[centosplus]
+name=CentOS-$releasever - Plus
+baseurl=https://mirrors.tuna.tsinghua.edu.cn/centos/$releasever/centosplus/$basearch/
+#mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=centosplus
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
+
+#contrib - packages by Centos Users
+[contrib]
+name=CentOS-$releasever - Contrib
+baseurl=https://mirrors.tuna.tsinghua.edu.cn/centos/$releasever/contrib/$basearch/
+#mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=contrib
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6' > /etc/yum.repos.d/CentOS-Base.repo
+elif [ $version -eq 7 ] ;then
+    echo '# CentOS-Base.repo
+#
+# The mirror system uses the connecting IP address of the client and the
+# update status of each mirror to pick mirrors that are updated to and
+# geographically close to the client.  You should use this for CentOS updates
+# unless you are manually picking other mirrors.
+#
+# If the mirrorlist= does not work for you, as a fall back you can try the
+# remarked out baseurl= line instead.
+#
+#
+
+[base]
+name=CentOS-$releasever - Base
+baseurl=https://mirrors.tuna.tsinghua.edu.cn/centos/$releasever/os/$basearch/
+#mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=os
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+
+#released updates
+[updates]
+name=CentOS-$releasever - Updates
+baseurl=https://mirrors.tuna.tsinghua.edu.cn/centos/$releasever/updates/$basearch/
+#mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=updates
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+
+#additional packages that may be useful
+[extras]
+name=CentOS-$releasever - Extras
+baseurl=https://mirrors.tuna.tsinghua.edu.cn/centos/$releasever/extras/$basearch/
+#mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=extras
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+
+#additional packages that extend functionality of existing packages
+[centosplus]
+name=CentOS-$releasever - Plus
+baseurl=https://mirrors.tuna.tsinghua.edu.cn/centos/$releasever/centosplus/$basearch/
+#mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=centosplus
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7' > /etc/yum.repos.d/CentOS-Base.repo
+fi    
+}
+
+auto_repo()
+{
+    get_OS_version 
+    if [ $version -eq 6 ]; then
+        netcard=$( ifconfig -a | awk '{print $1}' | head- n 1 )
+        cat /etc/sysconfig/network-scripts/ifcfg-$netcard | grep -v "ONBOOT" > /etc/sysconfig/network-scripts/ifcfg-$netcard.1
+        echo 'ONBOOT=yes' >> /etc/sysconfig/network-scripts/ifcfg-$netcard.1
+        rm -rf /etc/sysconfig/network-scripts/ifcfg-$netcard
+        mv /etc/sysconfig/network-scripts/ifcfg-$netcard.1 /etc/sysconfig/network-scripts/ifcfg-$netcard 
+        chmod 644 /etc/sysconfig/network-scripts/ifcfg-$netcard 
+        service network restart 
+    elif [ $version -eq 7 ]; then 
+        netcard=$( ifconfig -a | awk '{print $1}' | head -n 1 | cut -d':' -f1 )
+        cat /etc/sysconfig/network-scripts/ifcfg-$netcard | grep -v "ONBOOT" > /etc/sysconfig/network-scripts/ifcfg-$netcard.1
+        echo 'ONBOOT="yes"' >> /etc/sysconfig/network-scripts/ifcfg-$netcard.1
+        rm -rf /etc/sysconfig/network-scripts/ifcfg-$netcard
+        mv /etc/sysconfig/network-scripts/ifcfg-$netcard.1 /etc/sysconfig/network-scripts/ifcfg-$netcard 
+        chmod 644 /etc/sysconfig/network-scripts/ifcfg-$netcard 
+        systemctl restart network 
+    fi 
+    #get_net_status
+    echo "checking network status"
+    ping=$(ping -c 1 mirrors.tuna.tsinghua.edu.cn | awk '{print $4}' | tail -n 2 | head -n 1)
+    if [ $ping -ne 1 ]; then
+        echo "use local repo"
+        get_media_status
+        echo "[local]
+name=local
+baseurl=file:///media
+gpgcheck=0
+enable=1" > /etc/yum.repos.d/local.repo
+    elif [ $ping -eq 1 ]; then
+        echo "use TUNA repo"
+        make_repo_file
+        yum update -y
+        yum upgrade -y
+    fi
+}
+auto_repo
