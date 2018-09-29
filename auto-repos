@@ -11,7 +11,7 @@ get_media_status()
 }
 get_OS_version()
 {
-    version=$(grep -oE /etc/redhat-release | cut -d'.' -f1)
+    version=$(grep -oE "[0-9.]+"/etc/redhat-release | cut -d'.' -f1)
 }
 make_repo_file()
 {
