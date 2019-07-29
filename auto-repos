@@ -11,7 +11,7 @@ get_media_status()
 }
 get_OS_version()
 {
-    version=$(grep -oE "[0-9.]+" /etc/redhat-release | cut -d'.' -f1)
+    version=$(grep -oE "[0-9.]+" /etc/redhat-release | head -n 1 )
 }
 make_repo_file()
 {
@@ -30,7 +30,7 @@ auto_repo()
 {
     get_OS_version 
     if [ $version -eq 6 ]; then
-        netcard=$( ifconfig -a | awk '{print $1}' | head -n 1 )
+        netcard=$( ip addr | grep dynamic | awk '{print $9}')
         cat /etc/sysconfig/network-scripts/ifcfg-$netcard | grep -v "ONBOOT" > /etc/sysconfig/network-scripts/ifcfg-$netcard.1
         echo 'ONBOOT=yes' >> /etc/sysconfig/network-scripts/ifcfg-$netcard.1
         rm -rf /etc/sysconfig/network-scripts/ifcfg-$netcard
