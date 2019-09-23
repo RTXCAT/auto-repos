@@ -1,4 +1,7 @@
 #!/bin/bash
+#Make sure only root can run our script
+[[ $EUID -ne 0 ]] && echo -e "Error,This script must be run as root!"
+
 get_media_status()
 {
     rm -rf /etc/yum.repos.d/*.repo
@@ -11,7 +14,7 @@ get_media_status()
 }
 get_OS_version()
 {
-    version=$(grep -oE "[0-9.]+" /etc/redhat-release | head -n 1 )
+    version=$(grep -oE "[0-9.]+" /etc/redhat-release | head -n 1 | cut -d'.' -f1 )
 }
 make_repo_file()
 {
@@ -29,37 +32,17 @@ make_repo_file()
 auto_repo()
 {
     get_OS_version 
-    if [ $version -eq 6 ]; then
-        netcard=$( ip addr | grep dynamic | awk '{print $9}')
-        cat /etc/sysconfig/network-scripts/ifcfg-$netcard | grep -v "ONBOOT" > /etc/sysconfig/network-scripts/ifcfg-$netcard.1
-        echo 'ONBOOT=yes' >> /etc/sysconfig/network-scripts/ifcfg-$netcard.1
-        rm -rf /etc/sysconfig/network-scripts/ifcfg-$netcard
-        mv /etc/sysconfig/network-scripts/ifcfg-$netcard.1 /etc/sysconfig/network-scripts/ifcfg-$netcard 
-        chmod 644 /etc/sysconfig/network-scripts/ifcfg-$netcard 
-        service network restart 
-    elif [ $version -eq 7 ]; then 
-        netcard=$( ifconfig -a | awk '{print $1}' | head -n 1 | cut -d':' -f1 )
-        cat /etc/sysconfig/network-scripts/ifcfg-$netcard | grep -v "ONBOOT" > /etc/sysconfig/network-scripts/ifcfg-$netcard.1
-        echo 'ONBOOT="yes"' >> /etc/sysconfig/network-scripts/ifcfg-$netcard.1
-        rm -rf /etc/sysconfig/network-scripts/ifcfg-$netcard
-        mv /etc/sysconfig/network-scripts/ifcfg-$netcard.1 /etc/sysconfig/network-scripts/ifcfg-$netcard 
-        chmod 644 /etc/sysconfig/network-scripts/ifcfg-$netcard 
-        systemctl restart network 
-    fi 
+    
     #get_net_status
     echo "checking network status"
     ping=$(ping -c 1 mirrors.tuna.tsinghua.edu.cn | awk '{print $4}' | tail -n 2 | head -n 1)
     if [ $ping -ne 1 ]; then
-        echo "use local repo"
-        get_media_status
-        cp $PWD/local.repo /etc/yum.repos.d/local.repo
-    elif [ $ping -eq 1 ]; then
+        echo "Please check network"
+  elif [ $ping -eq 1 ]; then
         echo "use TUNA repo"
         make_repo_file
         yum update -y
         yum upgrade -y
     fi
 }
-#Make sure only root can run our script
-[[ $EUID -ne 0 ]] && echo -e "Error,This script must be run as root!"
 auto_repo
